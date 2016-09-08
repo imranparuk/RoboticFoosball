@@ -77,64 +77,110 @@ int main(int argc, char** argv)
 		}
 
 		Mat imgHSV;
-		Mat imgThresholded;
+		Mat imgThresholdedPlayerA;
+		Mat imgThresholdedPlayerB;
 
 
 		cvtColor(imgOriginal, imgHSV, CV_BGR2HSV); //Convert the captured frame from BGR to HSV
+		//cv::inRange(imgHSV, cv::Scalar(0, 0, 0, 0), cv::Scalar(180, 255, 30, 0), imgThresholded);
 
 		cv::Mat lower_red_hue_range;
 		cv::Mat upper_red_hue_range;
 		cv::inRange(imgHSV, cv::Scalar(0, 100, 100), cv::Scalar(10, 255, 255), lower_red_hue_range);
 		cv::inRange(imgHSV, cv::Scalar(160, 100, 100), cv::Scalar(179, 255, 255), upper_red_hue_range);
 
+		Mat yellow;
+		
+		inRange(imgHSV, Scalar(11, 0, 100), Scalar(40, 255, 255), imgThresholdedPlayerB);
+
 		// Combine the above two images
 
-		cv::addWeighted(lower_red_hue_range, 1.0, upper_red_hue_range, 1.0, 0.0, imgThresholded);
-		//int rotation = 128 - 255; // 255 = red
-		//add(imgHSV, Scalar(rotation, 0, 0), imgHSV);
-		//inRange(imgHSV, Scalar(114, 135, 135), Scalar(142, 255, 255), imgThresholded);
-		//inRange(imgHSV, cv::Scalar(114, iLowS, iLowV), cv::Scalar(142, iHighS, iHighV), imgThresholded);
-		/*Mat mask1, mask2, mask;
-
-
-		cv::inRange(imgHSV, cv::Scalar(0, iLowS, iLowV), cv::Scalar(10, iHighS, iHighV), mask1);
-		cv::inRange(imgHSV, cv::Scalar(160, iLowS, iLowV), cv::Scalar(180, iHighS, iHighV), mask2);
-
-		mask = mask1 | mask2;
-		imgThresholded = mask;*/
-		//inRange(imgHSV, Scalar(iLowH, iLowS, iLowV), Scalar(iHighH, iHighS, iHighV), imgThresholded); //Threshold the image
+		cv::addWeighted(lower_red_hue_range, 1.0, upper_red_hue_range, 1.0, 0.0, imgThresholdedPlayerA);
+		
+		//addWeighted(yellow, 1.0, imgThresholded, 1.0, 0.0, imgThresholded);
 
 		//morphological opening (remove small objects from the foreground)
-		erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
-		dilate(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+		erode(imgThresholdedPlayerA, imgThresholdedPlayerA, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+		dilate(imgThresholdedPlayerA, imgThresholdedPlayerA, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 
 		//morphological closing (fill small holes in the foreground)
-		dilate(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
-		erode(imgThresholded, imgThresholded, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+		dilate(imgThresholdedPlayerA, imgThresholdedPlayerA, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+		erode(imgThresholdedPlayerA, imgThresholdedPlayerA, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 
-		std::vector< std::vector<cv::Point> > contours;
-		std::vector<cv::Point> points;
-		cv::findContours(imgThresholded, contours, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
+		//morphological opening (remove small objects from the foreground)
+		erode(imgThresholdedPlayerB, imgThresholdedPlayerB, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+		dilate(imgThresholdedPlayerB, imgThresholdedPlayerB, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 
+		//morphological closing (fill small holes in the foreground)
+		dilate(imgThresholdedPlayerB, imgThresholdedPlayerB, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+		erode(imgThresholdedPlayerB, imgThresholdedPlayerB, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
+
+		std::vector< std::vector<cv::Point> > contoursA;
+		std::vector<cv::Point> pointsA;
+		cv::findContours(imgThresholdedPlayerA, contoursA, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
+
+		std::vector< std::vector<cv::Point> > contoursB;
+		std::vector<cv::Point> pointsB;
+		cv::findContours(imgThresholdedPlayerB, contoursB, CV_RETR_LIST, CV_CHAIN_APPROX_NONE);
 		// And process the points or contours to pick up specified object.
 
 
-		for (int i = 0; i < contours.size(); ++i)
+		for (int i = 0; i < contoursA.size(); ++i)
 		{
 
-			Rect rect;
+			//Rect rect;
 			RotatedRect rotate_rect;
+			Point2f points[4];
 
-			//compute the bounding rect, rotated bounding rect, minum enclosing circle.
-			rect = boundingRect(contours[i]);
-			rotate_rect = minAreaRect(contours[i]);
+			//rect = boundingRect(contoursB[i]);
+			rotate_rect = minAreaRect(contoursA[i]);
+
+			rotate_rect.points(points);
 
 			//draw them on the bounding image.
-			cv::rectangle(imgOriginal, rect, Scalar(255, 255, 255), 2);
+			//cv::rectangle(imgOriginal, rect, Scalar(0, 0, 0), 2);
+			vector< vector< Point> > polylines;
+			polylines.resize(1);
+			for (int j = 0; j < 4; ++j)
+				polylines[0].push_back(points[j]);
+
+			//draw them on the bounding image.
+			cv::polylines(imgOriginal, polylines, true, Scalar(255, 255, 255), 2);
+			
+			Moments m = moments(contoursA[i], true);
+			Point center(m.m10 / m.m00, m.m01 / m.m00);
+			circle(imgOriginal, center, 5.0, Scalar(0, 0, 0), 2, 8);
+		}
+
+		for (int i = 0; i < contoursB.size(); ++i)
+		{
+
+			//Rect rect;
+			RotatedRect rotate_rect;
+			Point2f points[4];
+
+			//rect = boundingRect(contoursB[i]);
+			rotate_rect = minAreaRect(contoursB[i]);
+
+			rotate_rect.points(points);
+
+			//draw them on the bounding image.
+			//cv::rectangle(imgOriginal, rect, Scalar(0, 0, 0), 2);
+			vector< vector< Point> > polylines;
+			polylines.resize(1);
+			for (int j = 0; j < 4; ++j)
+				polylines[0].push_back(points[j]);
+
+			//draw them on the bounding image.
+			cv::polylines(imgOriginal, polylines, true, Scalar(0, 0, 0), 2);
+
+			Moments m = moments(contoursB[i], true);
+			Point center(m.m10 / m.m00, m.m01 / m.m00);
+			circle(imgOriginal, center, 5.0, Scalar(70, 0, 255), 2, 8);
 
 		}
 
-		imshow("Thresholded Image", imgThresholded); //show the thresholded image
+		//imshow("Thresholded Image", imgThresholded); //show the thresholded image
 		imshow("Original", imgOriginal); //show the original image
 
 		if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
