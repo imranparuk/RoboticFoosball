@@ -10,7 +10,7 @@
 using namespace cv;
 using namespace std;
 
-cv::Mat detectPlayerA(cv::Mat dst);
+cv::Mat detectPlayerA(cv::Mat dst, Point *positions);
 cv::Mat detectPlayerB(cv::Mat dst);
 cv::Mat detectBall(cv::Mat dst);
 cv::Mat warp(cv::Mat imgOriginal);
@@ -65,8 +65,9 @@ int main(int argc, char** argv)
 		cv::Mat dst;
 		dst = warp(imgOriginal);
 		imshow("orig", imgOriginal);
-		int tmp = 0;
-		cv::Mat dA = detectPlayerA(dst);
+		Point latestPositions[11];
+		cv::Mat dA = detectPlayerA(dst, latestPositions);
+		cout << "Player " << "4" << ":" << latestPositions[3] << endl;
 		imshow("ya", dA);
 		
 		if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
@@ -81,7 +82,7 @@ int main(int argc, char** argv)
 }
 
 
-cv::Mat detectPlayerA(cv::Mat dst)
+cv::Mat detectPlayerA(cv::Mat dst,Point *positions)
 {
 	cv::Mat imgHSV;
 	Mat lower_red_hue_range;
@@ -143,9 +144,7 @@ cv::Mat detectPlayerA(cv::Mat dst)
 
 //	for (int i = 0; i < 11;i++)
 //		cout << "Player " << i << ":" << men[i] << endl;
-
-
-	int p[11] = {-1};
+//--------------------------------correct-------------------------
 	Point men_left[4];
 	Point men_right[7];
 	int c_left = 0;
@@ -242,10 +241,13 @@ cv::Mat detectPlayerA(cv::Mat dst)
 	{
 		men[i + 4] = men_right[i];
 	}
-
-	cout << "Player " << "4" << ":" << men[3] << endl;
-
-
+	//cout << "Player " << "4" << ":" << men[3] << endl;
+	//men is sorted in its correct positions
+	for (int i = 0; i < 11; i++)
+	{
+		positions[i] = men[i];
+	}
+//----------------------------------------------------------------------------------------
 
 	return dst;
 }
@@ -428,9 +430,9 @@ cv::Mat warp(cv::Mat imgOriginal)
 			pos3 = x1_right;
 		}
 
-		//cout << "Postion 1: " << myMat[pos1] << endl;
-		//cout << "Postion 2: " << myMat[pos2] << endl;
-		//cout << "Postion 3: " << myMat[pos3] << endl;
+		//cout << "Postion 1: " << myMat[pos1] << " ";
+		//cout << "Postion 2: " << myMat[pos2] << " ";
+		//cout << "Postion 3: " << myMat[pos3] << " ";
 		//cout << "Postion 4: " << myMat[pos4] << endl;
 	}
 	else {
@@ -456,14 +458,18 @@ cv::Mat warp(cv::Mat imgOriginal)
 	if (maxH > 400)
 		return imgOriginal;
 
-	Point2f pt1(0, 0);
-	Point2f pt2(maxW - 1, 0);
-	Point2f pt3(maxW - 1, maxH - 1);
-	Point2f pt4(0, maxH - 1);
+	Point2f pt1(0, 0); //position 1
+	Point2f pt2(maxW - 1, 0); //postion 4
+	Point2f pt3(maxW - 1, maxH - 1);//position 3
+	Point2f pt4(0, maxH - 1);//position 2
 
-	//Point2f dest_points[4] = { pt1, pt2, pt3, pt4 };
+	//cout << "Point 1: " << pt1 << " ";
+	//cout << "Point 2: " << pt4 << " ";
+	//cout << "Point 3: " << pt3 << " ";
+	//cout << "Point 4: " << pt2 << endl << endl;
+
+	//Point2f dest_points[4] = { pt2, pt1, pt3, pt4 };
 	Point2f dest_points[4] = { pt4, pt3, pt1, pt2 };
-
 
 	cv::Mat dst;
 	Mat transform_matrix = cv::getPerspectiveTransform(myMat, dest_points);
