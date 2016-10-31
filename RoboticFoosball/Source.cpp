@@ -65,7 +65,9 @@ int main(int argc, char** argv)
 		cv::Mat dst;
 		dst = warp(imgOriginal);
 		imshow("orig", imgOriginal);
-		imshow("ya", detectPlayerA(detectPlayerB(detectBall(dst))));
+		int tmp = 0;
+		cv::Mat dA = detectPlayerA(dst);
+		imshow("ya", dA);
 		
 		if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
 		{
@@ -99,7 +101,8 @@ cv::Mat detectPlayerA(cv::Mat dst)
 	std::vector< std::vector<cv::Point> > contoursA;
 	std::vector<cv::Point> pointsA;
 	cv::findContours(imgThresholdedPlayerA, contoursA, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
-
+	Point men[100];
+	int count = 0;
 	for (int i = 0; i < contoursA.size(); ++i)
 	{
 		if (contourArea(contoursA[i]) > 50 && contourArea(contoursA[i]) < 600)
@@ -126,10 +129,124 @@ cv::Mat detectPlayerA(cv::Mat dst)
 
 			Moments m = moments(contoursA[i], true);
 			Point center(m.m10 / m.m00, m.m01 / m.m00);
-			cout << "Player A: " << i << center << endl;
+			men[count] = center;
+			count++;
+			//cout << "Player A: " << i << center << endl;
 			circle(dst, center, 5.0, Scalar(0, 0, 0), 2, 8);
 		}
 	}
+
+	if (count > 11)
+	{
+		return dst;
+	}
+
+//	for (int i = 0; i < 11;i++)
+//		cout << "Player " << i << ":" << men[i] << endl;
+
+
+	int p[11] = {-1};
+	Point men_left[4];
+	Point men_right[7];
+	int c_left = 0;
+	int c_right = 0;
+
+		//  [593, 340] ya
+		//	[59.6724, 319.741] ya
+		//	[601.672, 49.7414] ya
+		//	[70, 36] ya
+		
+	for (int i = 0; i < 11; i++)
+	{
+		if (men[i].x < 150)
+		{
+			men_left[c_left] = men[i];
+			c_left++;
+		}
+		else
+		{
+			men_right[c_right] = men[i];
+			c_right++;
+		}
+	}
+
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = i + 1; j < 4; j++)
+		{
+			if (men_left[j].x < men_left[i].x)
+			{
+				Point temp = men_left[i];
+				men_left[i] = men_left[j];
+				men_left[j] = temp;
+			}
+		}
+	}
+	for (int i = 1; i < 4; i++)
+	{
+		for (int j = i + 1; j < 4; j++)
+		{
+			if (men_left[j].y < men_left[i].y)
+			{
+				Point temp = men_left[i];
+				men_left[i] = men_left[j];
+				men_left[j] = temp;
+			}
+		}
+	}
+
+	for (int i = 0; i < 7; i++)
+	{
+		for (int j = i + 1; j < 7; j++)
+		{
+			if (men_right[j].x < men_right[i].x)
+			{
+				Point temp = men_right[i];
+				men_right[i] = men_right[j];
+				men_right[j] = temp;
+			}
+		}
+	}
+	for (int i = 0; i < 4; i++)
+	{
+		for (int j = i + 1; j < 4; j++)
+		{
+			if (men_right[j].y < men_right[i].y)
+			{
+				Point temp = men_right[i];
+				men_right[i] = men_right[j];
+				men_right[j] = temp;
+			}
+		}
+	}
+
+	for (int i = 4; i < 7; i++)
+	{
+		for (int j = i + 1; j < 7; j++)
+		{
+			if (men_right[j].y < men_right[i].y)
+			{
+				Point temp = men_right[i];
+				men_right[i] = men_right[j];
+				men_right[j] = temp;
+			}
+		}
+	}
+
+
+	for (int i = 0; i < 4; i++)
+	{
+		men[i] = men_left[i];
+	}
+	for (int i = 0; i < 7; i++)
+	{
+		men[i + 4] = men_right[i];
+	}
+
+	cout << "Player " << "4" << ":" << men[3] << endl;
+
+
+
 	return dst;
 }
 
@@ -311,10 +428,10 @@ cv::Mat warp(cv::Mat imgOriginal)
 			pos3 = x1_right;
 		}
 
-		cout << "Postion 1: " << myMat[pos1] << endl;
-		cout << "Postion 2: " << myMat[pos2] << endl;
-		cout << "Postion 3: " << myMat[pos3] << endl;
-		cout << "Postion 4: " << myMat[pos4] << endl;
+		//cout << "Postion 1: " << myMat[pos1] << endl;
+		//cout << "Postion 2: " << myMat[pos2] << endl;
+		//cout << "Postion 3: " << myMat[pos3] << endl;
+		//cout << "Postion 4: " << myMat[pos4] << endl;
 	}
 	else {
 		pos1 = 0;
