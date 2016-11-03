@@ -7,6 +7,10 @@
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include "opencv2/calib3d/calib3d.hpp"
+
+#include "Player.h"
+#include "PlayerLine.h"
+
 using namespace cv;
 using namespace std;
 
@@ -15,6 +19,8 @@ cv::Mat detectPlayerB(cv::Mat dst);
 cv::Mat detectBall(cv::Mat dst);
 cv::Mat warp(cv::Mat imgOriginal);
 
+Point ballLoc;
+Point prevBallLoc;
 
 int main(int argc, char** argv)
 {
@@ -27,6 +33,12 @@ int main(int argc, char** argv)
 		cout << "Cannot open the web cam" << endl;
 		return -1;
 	}
+
+	Serial* SP = new Serial("\\\\.\\COM6");    // adjust as needed
+	if (SP->IsConnected())
+		cout << ("We're connected") << endl;
+
+	Player playa = Player(SP);
 
 	namedWindow("Control", CV_WINDOW_AUTOSIZE); //create a window called "Control"
 
@@ -66,8 +78,10 @@ int main(int argc, char** argv)
 		dst = warp(imgOriginal);
 		imshow("orig", imgOriginal);
 		Point latestPositions[11];
-		cv::Mat dA = detectPlayerA(dst, latestPositions);
-		cout << "Player " << "4" << ":" << latestPositions[3] << endl;
+		Mat dA = detectPlayerA(dst, latestPositions);
+		Mat dB = detectBall(dA);
+		playa.moveToBall(ballLoc);
+		cout << "Player " << "4" <<  ":" << latestPositions[10] << endl;
 		imshow("ya", dA);
 		
 		if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
@@ -84,10 +98,13 @@ int main(int argc, char** argv)
 
 cv::Mat detectPlayerA(cv::Mat dst,Point *positions)
 {
-	cv::Mat imgHSV;
+	Mat imgHSV;
 	Mat lower_red_hue_range;
 	Mat upper_red_hue_range;
 	Mat imgThresholdedPlayerA;
+	Point men_left[4];
+	Point men_right[7];
+
 	cvtColor(dst, imgHSV, CV_BGR2HSV); //Convert the captured frame from BGR to HSV
 	inRange(imgHSV, Scalar(0, 50, 100), Scalar(10, 255, 255), lower_red_hue_range);
 	inRange(imgHSV, Scalar(160, 50, 100), Scalar(179, 255, 255), upper_red_hue_range);
@@ -145,8 +162,7 @@ cv::Mat detectPlayerA(cv::Mat dst,Point *positions)
 //	for (int i = 0; i < 11;i++)
 //		cout << "Player " << i << ":" << men[i] << endl;
 //--------------------------------correct-------------------------
-	Point men_left[4];
-	Point men_right[7];
+
 	int c_left = 0;
 	int c_right = 0;
 
@@ -330,7 +346,11 @@ cv::Mat detectBall(cv::Mat dst)
 
 			minEnclosingCircle(contoursBall[i], center, radius);
 			if (radius > 6 && radius < 10)
+			{
 				cv::circle(dst, center, radius, Scalar(255, 0, 0), 2);
+				prevBallLoc = ballLoc;
+				ballLoc = (Point)center;
+			}
 		}
 
 	}
@@ -351,6 +371,7 @@ cv::Mat warp(cv::Mat imgOriginal)
 	dilate(imgThresholdCorners, imgThresholdCorners, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 	erode(imgThresholdCorners, imgThresholdCorners, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 
+	Mat dst;
 	std::vector< std::vector<cv::Point> > contoursCorners;
 	std::vector<cv::Point> pointsCorners;
 	cv::findContours(imgThresholdCorners, contoursCorners, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
@@ -459,21 +480,66 @@ cv::Mat warp(cv::Mat imgOriginal)
 		return imgOriginal;
 
 	Point2f pt1(0, 0); //position 1
-	Point2f pt2(maxW - 1, 0); //postion 4
+	Point2f pt2(0, maxH - 1);//position 2
 	Point2f pt3(maxW - 1, maxH - 1);//position 3
-	Point2f pt4(0, maxH - 1);//position 2
+	Point2f pt4(maxW - 1, 0); //postion 4
+	//
+	Point2f nMat[4] = { myMat[0], myMat[3], myMat[1], myMat[2] };
+
 
 	//cout << "Point 1: " << pt1 << " ";
 	//cout << "Point 2: " << pt4 << " ";
 	//cout << "Point 3: " << pt3 << " ";
 	//cout << "Point 4: " << pt2 << endl << endl;
+	//1st-------2nd
+	//|			|
+	//|			|
+	//|			|
+	//3rd------- 4th
 
 	//Point2f dest_points[4] = { pt2, pt1, pt3, pt4 };
-	Point2f dest_points[4] = { pt4, pt3, pt1, pt2 };
+	//Point2f dest_points[4] = { pt4, pt3, pt1, pt2 };
+	//Point2f dest_points[4] = { pt3, pt2, pt4, pt1}; //perfecto
+	//Point2f dest_points[4] = { pt3, pt2, pt1, pt4 };
+	//Point2f dest_points[4] =  { pt1, pt3, pt2, pt4 }; //perfecto
+	//Point2f dest_points[4] = { pt4, pt3, pt2, pt1 };
 
-	cv::Mat dst;
-	Mat transform_matrix = cv::getPerspectiveTransform(myMat, dest_points);
-	warpPerspective(imgOriginal, dst, transform_matrix, cv::Size(maxW, maxH));
+	vector<Point2f> corners;
+	corners.push_back(myMat[0]);
+	corners.push_back(myMat[1]);
+	corners.push_back(myMat[2]);
+	corners.push_back(myMat[3]);
+
+
+	// Corners of the destination image
+	// output is the output image, should be defined before this operation
+	vector<cv::Point2f> output_corner;
+	output_corner.push_back(pt2);
+	output_corner.push_back(pt3);
+	output_corner.push_back(pt4);
+	output_corner.push_back(pt1);
+
+	// Get transformation matrix
+	Mat H = getPerspectiveTransform(corners, output_corner);
+	//cv::Mat dst;
+	//Mat transform_matrix = cv::getPerspectiveTransform(nMat, dest_points);
+	warpPerspective(imgOriginal, dst, H, cv::Size(maxW, maxH));
+
+	//cv::Point2f src_vertices[3];
+	//src_vertices[0] = myMat[0];
+	//src_vertices[1] = myMat[2];
+	//src_vertices[2] = myMat[3];
+	////src_vertices[3] = not_a_rect_shape[3];
+
+	//Point2f dst_vertices[3];
+	//dst_vertices[0] = pt1;
+	//dst_vertices[1] = pt3;
+	//dst_vertices[2] = pt4;
+
+
+	//Mat warpAffineMatrix = getAffineTransform(src_vertices, dst_vertices);
+
+	//warpAffine(imgOriginal, dst, warpAffineMatrix, Size(maxW, maxH), INTER_LINEAR, BORDER_CONSTANT);
 
 	return dst;
 }
