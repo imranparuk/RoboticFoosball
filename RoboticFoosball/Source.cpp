@@ -81,8 +81,8 @@ int main(int argc, char** argv)
 		Mat dA = detectPlayerA(dst, latestPositions);
 		Mat dB = detectBall(dA);
 		playa.moveToBall(ballLoc);
-		cout << "Player " << "4" <<  ":" << latestPositions[10] << endl;
-		imshow("ya", dA);
+		cout << "Player " << "3" <<  ":" << latestPositions[3] << endl;
+		imshow("ya", dB);
 		
 		if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
 		{
@@ -96,7 +96,7 @@ int main(int argc, char** argv)
 }
 
 
-cv::Mat detectPlayerA(cv::Mat dst,Point *positions)
+cv::Mat detectPlayerA(cv::Mat dst, Point *positions)
 {
 	Mat imgHSV;
 	Mat lower_red_hue_range;
@@ -154,14 +154,15 @@ cv::Mat detectPlayerA(cv::Mat dst,Point *positions)
 		}
 	}
 
-	if (count > 11)
+	if (count != 11)
 	{
 		return dst;
 	}
 
-//	for (int i = 0; i < 11;i++)
-//		cout << "Player " << i << ":" << men[i] << endl;
+	//for (int i = 0; i < 11;i++)
+	//	cout << "Player " << i << ":" << men[i] << endl;
 //--------------------------------correct-------------------------
+	cout << "CHECK! " << endl;
 
 	int c_left = 0;
 	int c_right = 0;
@@ -173,17 +174,22 @@ cv::Mat detectPlayerA(cv::Mat dst,Point *positions)
 		
 	for (int i = 0; i < 11; i++)
 	{
-		if (men[i].x < 150)
+		if ((men[i].x < 150) && (c_left < 4))
 		{
 			men_left[c_left] = men[i];
 			c_left++;
 		}
-		else
+		if ((men[i].x >= 150) && (c_right < 7))
 		{
 			men_right[c_right] = men[i];
 			c_right++;
 		}
 	}
+	if (c_left != 4 && c_right != 7) {
+		cout << "error!" << endl;
+		return dst;
+	}
+		
 
 	for (int i = 0; i < 4; i++)
 	{
@@ -257,6 +263,8 @@ cv::Mat detectPlayerA(cv::Mat dst,Point *positions)
 	{
 		men[i + 4] = men_right[i];
 	}
+	//for (int i = 0; i < 11; i++)
+	//	cout << "Player " << i << ":" << men[i] << endl;
 	//cout << "Player " << "4" << ":" << men[3] << endl;
 	//men is sorted in its correct positions
 	for (int i = 0; i < 11; i++)
@@ -338,15 +346,13 @@ cv::Mat detectBall(cv::Mat dst)
 
 	for (int i = 0; i < contoursBall.size(); ++i)
 	{
-		if (contourArea(contoursBall[i]) > 100 && contourArea(contoursBall[i]) < 190)
-		{
+		if (contourArea(contoursBall[i]) > 100 && contourArea(contoursBall[i]) < 190) {
 
 			Point2f center;
 			float radius;
 
 			minEnclosingCircle(contoursBall[i], center, radius);
-			if (radius > 6 && radius < 10)
-			{
+			if (radius > 6 && radius < 10) {
 				cv::circle(dst, center, radius, Scalar(255, 0, 0), 2);
 				prevBallLoc = ballLoc;
 				ballLoc = (Point)center;
@@ -386,6 +392,7 @@ cv::Mat warp(cv::Mat imgOriginal)
 
 	for (int i = 0; i < contoursCorners.size(); ++i)
 	{
+		if (i > 3) return imgOriginal;
 		Point2f center;
 		float radius;
 
@@ -403,10 +410,7 @@ cv::Mat warp(cv::Mat imgOriginal)
 
 	if (hasEnough)
 	{
-		//  [593, 340] ya
-		//	[59.6724, 319.741] ya
-		//	[601.672, 49.7414] ya
-		//	[70, 36] ya
+
 		int x1_left = -1;
 		int x2_left = -1;
 		int x1_right = -1;
@@ -451,7 +455,7 @@ cv::Mat warp(cv::Mat imgOriginal)
 			pos3 = x1_right;
 		}
 
-		//cout << "Postion 1: " << myMat[pos1] << " ";
+		//cout << "SPostion 1: " << myMat[pos1] << " ";
 		//cout << "Postion 2: " << myMat[pos2] << " ";
 		//cout << "Postion 3: " << myMat[pos3] << " ";
 		//cout << "Postion 4: " << myMat[pos4] << endl;
@@ -484,8 +488,6 @@ cv::Mat warp(cv::Mat imgOriginal)
 	Point2f pt3(maxW - 1, maxH - 1);//position 3
 	Point2f pt4(maxW - 1, 0); //postion 4
 	//
-	Point2f nMat[4] = { myMat[0], myMat[3], myMat[1], myMat[2] };
-
 
 	//cout << "Point 1: " << pt1 << " ";
 	//cout << "Point 2: " << pt4 << " ";
@@ -514,8 +516,12 @@ cv::Mat warp(cv::Mat imgOriginal)
 	// Corners of the destination image
 	// output is the output image, should be defined before this operation
 	vector<cv::Point2f> output_corner;
-	output_corner.push_back(pt2);
+	//output_corner.push_back(pt2);
+	//output_corner.push_back(pt3);
+	//output_corner.push_back(pt4);
+	//output_corner.push_back(pt1);
 	output_corner.push_back(pt3);
+	output_corner.push_back(pt2);
 	output_corner.push_back(pt4);
 	output_corner.push_back(pt1);
 
