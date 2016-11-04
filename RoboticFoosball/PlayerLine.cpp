@@ -72,7 +72,7 @@ int playerLine::getBestRotation(Point position)
 		
 
 
-		return reqPos;
+		
 	}
 	else if (position.y > maxPixels) return 90;
 	else if (position.y < minPixels) return 90;

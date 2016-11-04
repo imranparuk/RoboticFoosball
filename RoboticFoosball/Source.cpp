@@ -356,6 +356,7 @@ cv::Mat detectBall(cv::Mat dst)
 				cv::circle(dst, center, radius, Scalar(255, 0, 0), 2);
 				prevBallLoc = ballLoc;
 				ballLoc = (Point)center;
+				cout << "BallNow: " << ballLoc << " Ball Prev: " << prevBallLoc << endl;
 			}
 		}
 
