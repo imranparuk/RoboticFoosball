@@ -15,6 +15,7 @@
 
 #include "PlayerLine.h"
 #include "Serial.h"
+#include "Ball.h"
 
 using namespace cv;
 using namespace std;
@@ -24,17 +25,24 @@ class Player
 private:
 	Serial* serialPort;    
 	String comunicationStr = "";
+	int numberOfLines = 4;
+	playerLine pline[4] = {};
 
 
 public:
 	//Player(Serial*, playerEntity*);
 	Player(Serial*);
+	//Player(Serial *, Point *totalMen, int *yMin, int *yMax);
 
 	~Player();
 
 	void sendMoveData();
 	void setMoveData(Point[],int);
 	void moveToBall(Point);
+
+	void lineToBeActivated(Ball );
+
+
 };
 
 #endif // AGENT_H

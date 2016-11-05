@@ -10,6 +10,7 @@
 
 #include "Player.h"
 #include "PlayerLine.h"
+#include <ctime>
 
 using namespace cv;
 using namespace std;
@@ -21,12 +22,15 @@ cv::Mat warp(cv::Mat imgOriginal);
 
 Point ballLoc;
 Point prevBallLoc;
+Ball ball;
 
 int main(int argc, char** argv)
 {
 	VideoCapture cap(0); //capture the video from web cam
 	cap.set(CV_CAP_PROP_FRAME_WIDTH, 640);
 	cap.set(CV_CAP_PROP_FRAME_HEIGHT, 360);
+	cap.set(CV_CAP_PROP_FPS, 10);
+	
 
 	if (!cap.isOpened())  // if not success, exit program
 	{
@@ -40,30 +44,32 @@ int main(int argc, char** argv)
 
 	Player playa = Player(SP);
 
-	namedWindow("Control", CV_WINDOW_AUTOSIZE); //create a window called "Control"
+	//namedWindow("Control", CV_WINDOW_AUTOSIZE); //create a window called "Control"
 
-	int iLowH = 0;
-	int iHighH = 179;
+	//int iLowH = 0;
+	//int iHighH = 179;
 
-	int iLowS = 0;
-	int iHighS = 255;
+	//int iLowS = 0;
+	//int iHighS = 255;
 
-	int iLowV = 0;
-	int iHighV = 255;
+	//int iLowV = 0;
+	//int iHighV = 255;
 
-	//Create trackbars in "Control" window
-	cvCreateTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
-	cvCreateTrackbar("HighH", "Control", &iHighH, 179);
+	////Create trackbars in "Control" window
+	//cvCreateTrackbar("LowH", "Control", &iLowH, 179); //Hue (0 - 179)
+	//cvCreateTrackbar("HighH", "Control", &iHighH, 179);
 
-	cvCreateTrackbar("LowS", "Control", &iLowS, 255); //Saturation (0 - 255)
-	cvCreateTrackbar("HighS", "Control", &iHighS, 255);
+	//cvCreateTrackbar("LowS", "Control", &iLowS, 255); //Saturation (0 - 255)
+	//cvCreateTrackbar("HighS", "Control", &iHighS, 255);
 
-	cvCreateTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
-	cvCreateTrackbar("HighV", "Control", &iHighV, 255);
+	//cvCreateTrackbar("LowV", "Control", &iLowV, 255); //Value (0 - 255)
+	//cvCreateTrackbar("HighV", "Control", &iHighV, 255);
 
+	
 
 	while (true)
 	{
+		clock_t timeStart = clock();
 
 		Mat imgOriginal;
 
@@ -74,16 +80,32 @@ int main(int argc, char** argv)
 			cout << "Cannot read a frame from video stream" << endl;
 			break;
 		}
+
+		
+
 		cv::Mat dst;
 		dst = warp(imgOriginal);
 		imshow("orig", imgOriginal);
+		
 		Point latestPositions[11];
 		Mat dA = detectPlayerA(dst, latestPositions);
+		
 		Mat dB = detectBall(dA);
-		playa.moveToBall(ballLoc);
-		cout << "Player " << "3" <<  ":" << latestPositions[3] << endl;
+		
+		////playa.moveToBall(ballLoc);
+		clock_t cameraTime = clock();
+		playa.lineToBeActivated(ball);
+		clock_t warpTime = clock();
+		cout << "Player " << "3" <<  ":" << latestPositions[0] << endl;
 		imshow("ya", dB);
 		
+		clock_t end = clock();
+
+
+		float totalTime = (float)(end - timeStart) / CLOCKS_PER_SEC;
+		float camTime = (float)(warpTime - cameraTime) / CLOCKS_PER_SEC;
+		float precentage = (camTime / totalTime)*100;
+		cout << "TotalTime: " << totalTime << " WARPTime: " << camTime << " Percentage: " << precentage << "% " << endl;
 		if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
 		{
 			cout << "esc key is pressed by user" << endl;
@@ -121,6 +143,7 @@ cv::Mat detectPlayerA(cv::Mat dst, Point *positions)
 	cv::findContours(imgThresholdedPlayerA, contoursA, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
 	Point men[100];
 	int count = 0;
+
 	for (int i = 0; i < contoursA.size(); ++i)
 	{
 		if (contourArea(contoursA[i]) > 50 && contourArea(contoursA[i]) < 600)
@@ -156,13 +179,14 @@ cv::Mat detectPlayerA(cv::Mat dst, Point *positions)
 
 	if (count != 11)
 	{
+		cout << "Skipped Frame " << endl;
 		return dst;
 	}
 
 	//for (int i = 0; i < 11;i++)
 	//	cout << "Player " << i << ":" << men[i] << endl;
 //--------------------------------correct-------------------------
-	cout << "CHECK! " << endl;
+	//cout << "CHECK! " << endl;
 
 	int c_left = 0;
 	int c_right = 0;
@@ -346,7 +370,7 @@ cv::Mat detectBall(cv::Mat dst)
 
 	for (int i = 0; i < contoursBall.size(); ++i)
 	{
-		if (contourArea(contoursBall[i]) > 100 && contourArea(contoursBall[i]) < 190) {
+		if (contourArea(contoursBall[i]) > 120 && contourArea(contoursBall[i]) < 180) {
 
 			Point2f center;
 			float radius;
@@ -354,9 +378,11 @@ cv::Mat detectBall(cv::Mat dst)
 			minEnclosingCircle(contoursBall[i], center, radius);
 			if (radius > 6 && radius < 10) {
 				cv::circle(dst, center, radius, Scalar(255, 0, 0), 2);
-				prevBallLoc = ballLoc;
+				//prevBallLoc = ballLoc;
 				ballLoc = (Point)center;
-				cout << "BallNow: " << ballLoc << " Ball Prev: " << prevBallLoc << endl;
+				ball.setPosition(center);
+				cout << "Center: " << center << endl;
+				//cout << "BallNow: " << ball.getCurrentPosition()<< " Ball Prev: " << ball.getLastPosition() << endl;
 			}
 		}
 
@@ -393,7 +419,10 @@ cv::Mat warp(cv::Mat imgOriginal)
 
 	for (int i = 0; i < contoursCorners.size(); ++i)
 	{
-		if (i > 3) return imgOriginal;
+		if (i > 3) {
+			cout << "skipped Image" << endl;
+			return imgOriginal;
+		}
 		Point2f center;
 		float radius;
 
@@ -406,7 +435,7 @@ cv::Mat warp(cv::Mat imgOriginal)
 		if (i == 3) {
 			hasEnough = 1;
 		}
-		else continue;
+		//else continue;
 	}
 
 	if (hasEnough)
@@ -456,10 +485,10 @@ cv::Mat warp(cv::Mat imgOriginal)
 			pos3 = x1_right;
 		}
 
-		//cout << "SPostion 1: " << myMat[pos1] << " ";
-		//cout << "Postion 2: " << myMat[pos2] << " ";
-		//cout << "Postion 3: " << myMat[pos3] << " ";
-		//cout << "Postion 4: " << myMat[pos4] << endl;
+		cout << "Postion 1: " << myMat[pos1] << " ";
+		cout << "Postion 2: " << myMat[pos2] << " ";
+		cout << "Postion 3: " << myMat[pos3] << " ";
+		cout << "Postion 4: " << myMat[pos4] << endl;
 	}
 	else {
 		pos1 = 0;

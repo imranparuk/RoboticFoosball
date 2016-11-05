@@ -64,6 +64,14 @@ Serial::Serial(char *portName)
 				PurgeComm(this->hSerial, PURGE_RXCLEAR | PURGE_TXCLEAR);
 				//We wait 2s as the device is reseting
 				Sleep(WAIT_TIME);
+
+				//thread serThread(SerialThread);
+				//_beginthreadex(NULL, 0, this->SerialThread, NULL, 0, NULL);
+				_beginthread(&Serial::SerialThread, 0, static_cast<void*>(this));
+
+
+
+
 			}
 		}
 	}
@@ -120,6 +128,32 @@ int Serial::ReadData(char *buffer, unsigned int nbChar)
 
 }
 
+
+
+void Serial::SerialThreadWorker()
+{
+	while (true) {
+
+		string temp = ReadDataThread();
+		char* comunicationBuff = (char*)temp.c_str();
+		cout << comunicationBuff << endl;
+		WriteData(comunicationBuff, temp.length());
+		Sleep(10);
+	}
+}
+
+
+string Serial::ReadDataThread()
+{
+	lock_guard<mutex> guard(mu);
+	return dataString;
+}
+
+void Serial::WriteDataThread(string data)
+{
+	lock_guard<mutex> guard(mu);
+	dataString = data;
+}
 
 bool Serial::WriteData(char *buffer, unsigned int nbChar)
 {

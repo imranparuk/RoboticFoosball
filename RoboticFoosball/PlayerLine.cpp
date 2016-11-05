@@ -9,6 +9,20 @@ playerLine::playerLine(int maxP, int minP, int maxS, int numPl)
 	maxSteps = maxS;
 	numPlayers = numPl;
 }
+
+//playerLine::playerLine(int numP, Point *menInLine, int *minY, int *maxY)//Ahmad
+//{
+//	numPlayers = numP;
+//	int xTotal = 0;
+//	for (int i = 0; i < numP; i++)
+//	{
+//		arrPlayers[i].setPostion(menInLine[i]);
+//		arrPlayers[i].setRange(minY[i], maxY[i]);
+//		xTotal += menInLine[i].x;
+//	}
+//	xPos = xTotal / numP;
+//}
+
 playerLine::playerLine()
 {
 
@@ -48,17 +62,22 @@ void playerLine::setRotation(int rot)
 	yRot = rot;
 }
 
-int playerLine::getBestPlayerForPosition(Point position)
+int playerLine::getBestPlayerForPosition(Point position, int playerNum)
 {
+	int offset = 10;
+	
+
 	if (position.y < maxPixels && position.y > minPixels){
+
 		int absPixelRange = maxPixels - minPixels;
 		int pixelsRangePerPlayer = absPixelRange / numPlayers;
-		float pixelsToSteps = (float)maxSteps / (float)pixelsRangePerPlayer;
+		int offsetPixRangePerPlayer = pixelsRangePerPlayer - offset;
+		float pixelsToSteps = (float)maxSteps / (float)offsetPixRangePerPlayer;
 
 		float reqPosPix = (((position.y - minPixels)) % pixelsRangePerPlayer);
 
 		int reqPos = (int)(pixelsToSteps*reqPosPix);
-		cout << "PixRange: " << absPixelRange << "PixPerPlay: " << pixelsRangePerPlayer << "PixToSteps: " << pixelsToSteps << "reqPix: " << reqPosPix << "reqSteps: " << reqPos << endl;
+		//cout << "PixRange: " << absPixelRange << "PixPerPlay: " << pixelsRangePerPlayer << "PixToSteps: " << pixelsToSteps << "reqPix: " << reqPosPix << "reqSteps: " << reqPos << endl;
 		return reqPos;
 	}
 	else if (position.y > maxPixels) return maxSteps;

@@ -6,6 +6,15 @@
 #include <windows.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
+#include <thread>
+#include <list>
+#include <algorithm>
+#include <mutex>
+#include <process.h>
+
+
+using namespace std;
 
 class Serial
 {
@@ -18,6 +27,15 @@ private:
 	COMSTAT status;
 	//Keep track of last error
 	DWORD errors;
+
+	mutex mu;
+
+	string dataString;
+	string ReadDataThread();
+	static void __cdecl Serial::SerialThread(void* o)
+	{
+		static_cast<Serial*>(o)->SerialThreadWorker();
+	}
 
 public:
 	//Initialize Serial communication with the given COM port
@@ -34,6 +52,9 @@ public:
 	bool WriteData(char *buffer, unsigned int nbChar);
 	//Check if we are actually connected
 	bool IsConnected();
+
+	void WriteDataThread(string data);
+	void SerialThreadWorker();
 
 
 };

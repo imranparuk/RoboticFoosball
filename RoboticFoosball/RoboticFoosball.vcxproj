@@ -133,6 +133,7 @@
     <ClInclude Include="Ball.h" />
     <ClInclude Include="Player.h" />
     <ClInclude Include="PlayerLine.h" />
+    <ClInclude Include="PlayerMan.h" />
     <ClInclude Include="Serial.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
