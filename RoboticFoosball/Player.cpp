@@ -48,7 +48,7 @@ void Player::moveToBall(Point ballPosition)
 	int i = 0;
 	Point testD[4] = {};
 	for (playerLine & tmp : pline) {
-		testD[i].x = tmp.getBestPlayerForPosition(ballPosition);
+		testD[i].x = tmp.getBestPlayerForPosition(ballPosition, i);
 		testD[i].y = 90;
 		i++;
 	}

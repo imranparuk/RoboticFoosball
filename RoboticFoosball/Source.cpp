@@ -26,19 +26,20 @@ Ball ball;
 
 int main(int argc, char** argv)
 {
+
 	VideoCapture cap(0); //capture the video from web cam
 	cap.set(CV_CAP_PROP_FRAME_WIDTH, 640);
 	cap.set(CV_CAP_PROP_FRAME_HEIGHT, 360);
-	cap.set(CV_CAP_PROP_FPS, 10);
+    
+	cap.set(CV_CAP_PROP_FPS, 30);
 	
-
 	if (!cap.isOpened())  // if not success, exit program
 	{
 		cout << "Cannot open the web cam" << endl;
 		return -1;
 	}
 
-	Serial* SP = new Serial("\\\\.\\COM6");    // adjust as needed
+	Serial* SP = new Serial("\\\\.\\COM3");    // adjust as needed
 	if (SP->IsConnected())
 		cout << ("We're connected") << endl;
 
@@ -73,6 +74,7 @@ int main(int argc, char** argv)
 
 		Mat imgOriginal;
 
+
 		bool bSuccess = cap.read(imgOriginal); // read a new frame from video
 
 		if (!bSuccess) //if not success, break loop
@@ -92,9 +94,9 @@ int main(int argc, char** argv)
 		
 		Mat dB = detectBall(dA);
 		
-		////playa.moveToBall(ballLoc);
+		playa.moveToBall(ballLoc);
 		clock_t cameraTime = clock();
-		playa.lineToBeActivated(ball);
+		//playa.lineToBeActivated(ball);
 		clock_t warpTime = clock();
 		cout << "Player " << "3" <<  ":" << latestPositions[0] << endl;
 		imshow("ya", dB);
@@ -105,7 +107,7 @@ int main(int argc, char** argv)
 		float totalTime = (float)(end - timeStart) / CLOCKS_PER_SEC;
 		float camTime = (float)(warpTime - cameraTime) / CLOCKS_PER_SEC;
 		float precentage = (camTime / totalTime)*100;
-		cout << "TotalTime: " << totalTime << " WARPTime: " << camTime << " Percentage: " << precentage << "% " << endl;
+		cout << "TotalTime: " << totalTime << " FPS : " << 1/totalTime << " Percentage: " << precentage << "% " << endl;
 		if (waitKey(30) == 27) //wait for 'esc' key press for 30ms. If 'esc' key is pressed, break loop
 		{
 			cout << "esc key is pressed by user" << endl;
@@ -131,6 +133,7 @@ cv::Mat detectPlayerA(cv::Mat dst, Point *positions)
 	inRange(imgHSV, Scalar(0, 50, 100), Scalar(10, 255, 255), lower_red_hue_range);
 	inRange(imgHSV, Scalar(160, 50, 100), Scalar(179, 255, 255), upper_red_hue_range);
 	addWeighted(lower_red_hue_range, 1.0, upper_red_hue_range, 1.0, 0.0, imgThresholdedPlayerA);
+
 
 	erode(imgThresholdedPlayerA, imgThresholdedPlayerA, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));
 	dilate(imgThresholdedPlayerA, imgThresholdedPlayerA, getStructuringElement(MORPH_ELLIPSE, Size(5, 5)));

@@ -54,7 +54,7 @@ public:
 
 	void setLinePostion();
 
-	int getBestPlayerForPosition(Point, int);
+	int getBestPlayerForPosition(Point,int);
 	int getBestRotation(Point);
 
 

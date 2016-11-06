@@ -64,21 +64,45 @@ void playerLine::setRotation(int rot)
 
 int playerLine::getBestPlayerForPosition(Point position, int playerNum)
 {
-	int offset = 10;
+
 	
 
 	if (position.y < maxPixels && position.y > minPixels){
-
+		int offsetDeadzone = 10;
 		int absPixelRange = maxPixels - minPixels;
 		int pixelsRangePerPlayer = absPixelRange / numPlayers;
-		int offsetPixRangePerPlayer = pixelsRangePerPlayer - offset;
-		float pixelsToSteps = (float)maxSteps / (float)offsetPixRangePerPlayer;
+		int offsetPixRangePerPlayer = pixelsRangePerPlayer - offsetDeadzone;
+		float pixelsToSteps = 0;
+		if (playerNum == 0) {
+			pixelsToSteps = (float)maxSteps / (float)pixelsRangePerPlayer;
 
-		float reqPosPix = (((position.y - minPixels)) % pixelsRangePerPlayer);
+			float reqPosPix = (((position.y - minPixels)) % pixelsRangePerPlayer);
 
-		int reqPos = (int)(pixelsToSteps*reqPosPix);
-		//cout << "PixRange: " << absPixelRange << "PixPerPlay: " << pixelsRangePerPlayer << "PixToSteps: " << pixelsToSteps << "reqPix: " << reqPosPix << "reqSteps: " << reqPos << endl;
-		return reqPos;
+			int reqPos = (int)(pixelsToSteps*reqPosPix);
+			//cout << "PixRange: " << absPixelRange << "PixPerPlay: " << pixelsRangePerPlayer << "PixToSteps: " << pixelsToSteps << "reqPix: " << reqPosPix << "reqSteps: " << reqPos << endl;
+			return reqPos;
+		}
+		else if (playerNum == (numPlayers - 1)) {
+			pixelsToSteps = (float)maxSteps / (float)offsetPixRangePerPlayer;
+
+			float reqPosPix = (((position.y - minPixels)) % (pixelsRangePerPlayer - offsetDeadzone));
+
+			int reqPos = (int)(pixelsToSteps*reqPosPix);
+			//cout << "PixRange: " << absPixelRange << "PixPerPlay: " << pixelsRangePerPlayer << "PixToSteps: " << pixelsToSteps << "reqPix: " << reqPosPix << "reqSteps: " << reqPos << endl;
+			return reqPos;
+		}
+		else {
+			pixelsToSteps = (float)maxSteps / (float)offsetPixRangePerPlayer;
+
+			float reqPosPix = (((position.y - minPixels)) % (pixelsRangePerPlayer - offsetDeadzone));
+
+			int reqPos = (int)(pixelsToSteps*reqPosPix);
+			//cout << "PixRange: " << absPixelRange << "PixPerPlay: " << pixelsRangePerPlayer << "PixToSteps: " << pixelsToSteps << "reqPix: " << reqPosPix << "reqSteps: " << reqPos << endl;
+			return reqPos;
+
+		}
+
+
 	}
 	else if (position.y > maxPixels) return maxSteps;
 	else if (position.y < minPixels) return 0;

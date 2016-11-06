@@ -138,7 +138,7 @@ void Serial::SerialThreadWorker()
 		char* comunicationBuff = (char*)temp.c_str();
 		cout << comunicationBuff << endl;
 		WriteData(comunicationBuff, temp.length());
-		Sleep(10);
+		Sleep(15);
 	}
 }
 
